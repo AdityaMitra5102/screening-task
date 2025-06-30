@@ -231,7 +231,7 @@ const gridKeyElement = <p style={{display: 'none'}} id="grid-key-debug">{gridKey
                 overflow: 'hidden',
             }}
         >
-            {gridKeyElement}
+            
             <div id='metadata' style={{display: 'none'}}>
                 <p id='idstate'></p>
                 <p id='idChange'></p>
@@ -249,6 +249,7 @@ const gridKeyElement = <p style={{display: 'none'}} id="grid-key-debug">{gridKey
                 }></button>
             </div>           
             <ReactGridLayout
+                {...gridKeyElement}
                 allowOverlap={false}
                 layout={layout}
                 useCSSTransforms={false}
