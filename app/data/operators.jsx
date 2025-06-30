@@ -78,3 +78,7 @@ export const operators = [
         'isCustom': true,
     }
 ]
+
+export function getOperatorById(id) {
+    return operators.find(operator => operator.id === id);
+}

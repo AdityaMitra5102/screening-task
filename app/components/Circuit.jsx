@@ -29,6 +29,22 @@ export default ({ droppingItem }) => {
     */
     const [droppingItemHeight, setDroppingItemHeight] = React.useState(1); // Height of the dropping item, used to adjust the placeholder height during drag-and-drop of a new gate
     const [draggedItemId, setDraggedItemId] = React.useState(null); // ID of the item being dragged, used to handle drag-and-drop events of existing gates
+    const [widthmap, setWidthMap] = React.useState(new Map());    
+    const [layoutKey, setLayoutKey] = React.useState(0);
+    const [debugLayout, setDebugLayout] = React.useState([]);
+    const [gridKey, setGridKey] = React.useState(0);
+
+
+useEffect(() => {
+    console.log('layout updated:', layout);
+    // Force the layout state to update by setting it again with new references
+    const newLayout = layout.map(item => ({ ...item }));
+    setLayout(newLayout);
+    setDebugLayout([...newLayout]);
+    setLayoutKey(Date.now());
+    // Force ReactGridLayout to completely re-mount
+    setGridKey(prev => prev + 1);
+}, [JSON.stringify(layout)]); // Use JSON.stringify to detect actual content changes
 
     // Set the dropping item height for placeholder based on the height described in the operators array
     useEffect(() => {
@@ -38,10 +54,114 @@ export default ({ droppingItem }) => {
         setDroppingItemHeight(operators.find(op => op.id === droppingItem)?.height ?? 1);
     }, [droppingItem]);
 
+    function normalizeLayout(updatedLayout) {
+        for(var x=0;x<updatedLayout.length;x++)
+        {
+            for(const [key, value] of widthmap)
+            {
+                if(key===updatedLayout[x].i)
+                {
+                    updatedLayout[x].w=value;
+                }
+            }
+        }
+        return [...updatedLayout];
+    }
+
+    function fixOverlap(updatedLayout)
+    {
+        for(var i=0; i<updatedLayout.length;i++)
+        {
+            var shiftList=[]
+            if(updatedLayout[i].w>1)
+            {
+                var nearestX=9999
+                for(var j=0;j<updatedLayout.length;j++)
+                {
+                    if(i==j)
+                    {
+                        continue;
+                    }
+                    if( updatedLayout[j].x>updatedLayout[i].x)
+                    {
+                        shiftList.push(j);
+                        if(updatedLayout[j].x<nearestX)
+                        {
+                            nearestX=updatedLayout[j].x;
+                        }
+                    }
+                }
+            }
+
+            var endw=updatedLayout[i].x+updatedLayout[i].w;
+            var toShift=Math.max(endw-nearestX, 0)
+            if(toShift==0)
+            {
+                continue;
+            }
+
+            for(const item of shiftList)
+            {
+                updatedLayout[item].x=updatedLayout[item].x+toShift;
+            }
+        }
+
+         return [...updatedLayout];
+    }
+
     // Update the layout
     const handleCircuitChange = (newCircuit) => {
-        setLayout(newCircuit.layout);
+        const newLayout=normalizeLayout(newCircuit.layout);
+        const fixedOverlap=fixOverlap(newLayout);
+        console.log(fixedOverlap);
+            setTimeout(() => {
+        setLayout(fixedOverlap.map(item => ({ ...item })));
+        
+    }, 0);
     };
+
+   
+
+    const expandCG =(idstr) => {
+        var id=parseInt(idstr,0);
+        var newLayout=layout;
+        for(var i=0;i<newLayout.length; i++)
+        {   
+            
+            if(newLayout[i].i===idstr)
+            {
+                newLayout[i].w=4;
+                newLayout[i].xray=true;
+                widthmap.set(idstr,4);
+            }
+        }
+
+        setWidthMap(widthmap);
+        handleCircuitChange({
+            layout: [...newLayout],
+        });
+    }
+
+    
+    const compressCG =(idstr) => {
+        var id=parseInt(idstr.innerText,0);
+
+        var newLayout=layout;
+        for(var i=0;i<newLayout.length; i++)
+        {
+            if(newLayout[i].i===idstr)
+            {
+                newLayout[i].w=1;
+                newLayout[i].xray=true;
+                widthmap.set(idstr,1);
+            }
+        }
+        setWidthMap(widthmap);
+         handleCircuitChange({
+            layout: [...newLayout],
+        });
+    }
+
 
     // Handle dropping a new gate onto the circuit
     const onDrop = (newLayout, layoutItem, event) => {
@@ -60,9 +180,10 @@ export default ({ droppingItem }) => {
             gateId: gateId,
             x: layoutItem.x,
             y: layoutItem.y,
-            w: 1,
+            w: layoutItem.w,
             h: height,
             isResizable: false,
+            xray: false,
         };
         const updatedLayout = newLayout.filter(
             item => item.i !== '__dropping-elem__' && item.y < gridDimenY,
@@ -73,7 +194,7 @@ export default ({ droppingItem }) => {
             };
         });
         updatedLayout.push(newItem);
-
+        
         handleCircuitChange({
             layout: updatedLayout,
         });
@@ -95,10 +216,13 @@ export default ({ droppingItem }) => {
                 gateId: layout.find(i => i.i === item.i)?.gateId,
             };
         });
-        setLayout(updatedLayout);
+        
+        handleCircuitChange({
+            layout: updatedLayout,
+        });
         setDraggedItemId(null);
     }
-
+const gridKeyElement = <p style={{display: 'none'}} id="grid-key-debug">{gridKey}</p>;
     return (
         <div className='relative bg-white border-2 border-gray-200 m-2 shadow-lg rounded-lg'
             style={{
@@ -110,6 +234,23 @@ export default ({ droppingItem }) => {
                 overflow: 'hidden',
             }}
         >
+            {gridKeyElement}
+            <div id='metadata' style={{display: 'none'}}>
+                <p id='idstate'></p>
+                <p id='idChange'></p>
+                
+                <button id='triggerShow' onClick={()=> {
+                    const elem=document.getElementById('idstate');
+                    expandCG(elem.innerText);
+                }
+                }></button>
+
+            <button id='triggerHide' onClick={()=> {
+                    const elem=document.getElementById('idstate');
+                    compressCG(elem.innerText);
+                }
+                }></button>
+            </div>           
             <ReactGridLayout
                 allowOverlap={false}
                 layout={layout}
@@ -184,6 +325,7 @@ export default ({ droppingItem }) => {
                                 fill={gate.fill}
                                 isCustom={gate.isCustom}
                                 components={gate.components ?? []}
+                                xray={item.xray ?? false}
                             />
                         </div>
                     );
@@ -216,7 +358,8 @@ export default ({ droppingItem }) => {
                     </div>
                 ))}
             </div>
-
+          
         </div>
+        
     );
 }
