@@ -39,12 +39,12 @@ useEffect(() => {
     console.log('layout updated:', layout);
     // Force the layout state to update by setting it again with new references
     const newLayout = layout.map(item => ({ ...item }));
-    setLayout([...newLayout]);
+    setLayout(newLayout);
     setDebugLayout([...newLayout]);
     setLayoutKey(Date.now());
     // Force ReactGridLayout to completely re-mount
     setGridKey(prev => prev + 1);
-}, [...layout]); // Use JSON.stringify to detect actual content changes
+}, [JSON.stringify(layout)]); // Use JSON.stringify to detect actual content changes
 
     // Set the dropping item height for placeholder based on the height described in the operators array
     useEffect(() => {
@@ -114,10 +114,7 @@ useEffect(() => {
         const newLayout=normalizeLayout(newCircuit.layout);
         const fixedOverlap=fixOverlap(newLayout);
         console.log(fixedOverlap);
-            setTimeout(() => {
         setLayout(fixedOverlap.map(item => ({ ...item })));
-        
-    }, 0);
     };
 
    
