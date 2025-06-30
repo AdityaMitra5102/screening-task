@@ -4,7 +4,6 @@ module.exports = {
 };
 const nextConfig: NextConfig = {
   /* config options here */
-  output: 'export',
   experimental: {
     reactRefresh: true,
   },
