@@ -114,13 +114,14 @@ useEffect(() => {
         const newLayout=normalizeLayout(newCircuit.layout);
         const fixedOverlap=fixOverlap(newLayout);
         console.log(fixedOverlap);
+            setTimeout(() => {
         setLayout(fixedOverlap.map(item => ({ ...item })));
+        
+    }, 1);
     };
 
-   
 
     const expandCG =(idstr) => {
-        var id=parseInt(idstr,0);
         var newLayout=layout;
         for(var i=0;i<newLayout.length; i++)
         {   
@@ -141,8 +142,6 @@ useEffect(() => {
 
     
     const compressCG =(idstr) => {
-        var id=parseInt(idstr.innerText,0);
-
         var newLayout=layout;
         for(var i=0;i<newLayout.length; i++)
         {
@@ -249,7 +248,6 @@ const gridKeyElement = <p style={{display: 'none'}} id="grid-key-debug">{gridKey
                 }></button>
             </div>           
             <ReactGridLayout
-                {...gridKeyElement}
                 allowOverlap={false}
                 layout={layout}
                 useCSSTransforms={false}
